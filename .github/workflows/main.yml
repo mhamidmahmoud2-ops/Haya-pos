@@ -1,213 +1,216 @@
-name: Build HayaPOS APK
 
+name: Build HayaPOS APK
+ 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
-
+ 
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: mingc/android-build-box:latest
-
+ 
     steps:
-      - name: Create Project
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+ 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+ 
+      - name: Create Project and Build
         run: |
-          mkdir -p app/src/main/java/com/haya/pos
-          mkdir -p app/src/main/res/values
-          mkdir -p app/src/main/res/mipmap-mdpi
-          mkdir -p app/src/main/res/mipmap-hdpi
-          mkdir -p app/src/main/res/mipmap-xhdpi
-          mkdir -p app/src/main/res/mipmap-xxhdpi
-          mkdir -p app/src/main/res/mipmap-xxxhdpi
-          mkdir -p gradle/wrapper
-
-          cat > settings.gradle << 'SETTINGS'
-rootProject.name = "HayaPOS"
-include ':app'
-SETTINGS
-
-          cat > build.gradle << 'BG'
-buildscript {
-    repositories { google(); mavenCentral() }
-    dependencies { classpath 'com.android.tools.build:gradle:7.4.2' }
-}
-allprojects { repositories { google(); mavenCentral() } }
-BG
-
-          cat > gradle.properties << 'GP'
-android.useAndroidX=true
-android.enableJetifier=true
-GP
-
-          cat > gradle/wrapper/gradle-wrapper.properties << 'GWP'
-distributionBase=GRADLE_USER_HOME
-distributionPath=wrapper/dists
-distributionUrl=https\://services.gradle.org/distributions/gradle-7.5-bin.zip
-zipStoreBase=GRADLE_USER_HOME
-zipStorePath=wrapper/dists
-GWP
-
-          cat > gradlew << 'GW'
-#!/bin/sh
-exec gradle-7.5 "$@" 2>/dev/null || exec /opt/gradle/gradle-7.5/bin/gradle "$@"
-GW
-          chmod +x gradlew
-
-          cat > app/build.gradle << 'ABG'
-plugins { id 'com.android.application' }
-android {
-    namespace 'com.haya.pos'
-    compileSdk 33
-    defaultConfig {
-        applicationId "com.haya.pos"
-        minSdk 26
-        targetSdk 33
-        versionCode 1
-        versionName "1.0"
-    }
-    buildTypes { debug { minifyEnabled false } }
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
-    }
-}
-dependencies {
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'androidx.webkit:webkit:1.9.0'
-}
-ABG
-
-          cat > app/src/main/AndroidManifest.xml << 'AM'
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.BLUETOOTH"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
-    <application
-        android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
-        android:label="هيا وبلقيس"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.NoActionBar"
-        android:hardwareAccelerated="true"
-        android:usesCleartextTraffic="true">
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:screenOrientation="landscape"
-            android:windowSoftInputMode="adjustResize"
-            android:configChanges="orientation|screenSize"
-            android:launchMode="singleTop">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
-    </application>
-</manifest>
-AM
-
-          cat > app/src/main/java/com/haya/pos/MainActivity.java << 'MJ'
-package com.haya.pos;
-import android.annotation.SuppressLint;
-import android.app.AlertDialog;
-import android.os.Bundle;
-import android.view.View;
-import android.view.WindowManager;
-import android.webkit.*;
-import androidx.appcompat.app.AppCompatActivity;
-public class MainActivity extends AppCompatActivity {
-    private WebView webView;
-    private static final String URL = "https://effulgent-blini-89745c.netlify.app/";
-    @SuppressLint("SetJavaScriptEnabled")
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        webView = new WebView(this);
-        setContentView(webView);
-        hideSystemUI();
-        WebSettings s = webView.getSettings();
-        s.setJavaScriptEnabled(true);
-        s.setDomStorageEnabled(true);
-        s.setGeolocationEnabled(true);
-        s.setMediaPlaybackRequiresUserGesture(false);
-        s.setUseWideViewPort(true);
-        s.setLoadWithOverviewMode(true);
-        webView.setWebChromeClient(new WebChromeClient() {
-            @Override public void onPermissionRequest(PermissionRequest r) { r.grant(r.getResources()); }
-            @Override public void onGeolocationPermissionsShowPrompt(String o,GeolocationPermissions.Callback c) { c.invoke(o,true,false); }
-        });
-        webView.setWebViewClient(new WebViewClient() {
-            @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r) { v.loadUrl(r.getUrl().toString()); return true; }
-        });
-        webView.loadUrl(URL);
-    }
-    private void hideSystemUI() {
-        getWindow().getDecorView().setSystemUiVisibility(
-            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY|View.SYSTEM_UI_FLAG_FULLSCREEN|
-            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
-    }
-    @Override public void onWindowFocusChanged(boolean h) { super.onWindowFocusChanged(h); if(h) hideSystemUI(); }
-    @Override public void onBackPressed() {
-        if(webView.canGoBack()) { webView.goBack(); return; }
-        new AlertDialog.Builder(this).setTitle("إغلاق").setMessage("إغلاق التطبيق؟")
-            .setPositiveButton("نعم",(d,w)->super.onBackPressed()).setNegativeButton("لا",null).show();
-    }
-    @Override protected void onResume() { super.onResume(); webView.onResume(); }
-    @Override protected void onPause() { super.onPause(); webView.onPause(); }
-}
-MJ
-
-          cat > app/src/main/res/values/styles.xml << 'SX'
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
-        <item name="android:windowBackground">#1c2333</item>
-    </style>
-</resources>
-SX
-
-          python3 -c "
-import struct,zlib,math
-def png(s):
-    w=h=s;cx=cy=s//2;rows=[]
-    for y in range(h):
-        row=[0]
-        for x in range(w):
-            d=math.sqrt((x-cx)**2+(y-cy)**2);r2=s*0.4
-            if d<r2:
-                t=d/r2;row+=[int(112*t),int(112-50*t),int(242-100*t),255]
-            else:row+=[28,35,51,255]
-        rows.append(bytes(row))
-    def ck(t,d):
-        c=t.encode()+d
-        return struct.pack('>I',len(d))+c+struct.pack('>I',zlib.crc32(c)&0xffffffff)
-    raw=b''.join(rows)
-    p=b'\x89PNG\r\n\x1a\n'
-    p+=ck('IHDR',struct.pack('>IIBBBBB',w,h,8,6,0,0,0))
-    p+=ck('IDAT',zlib.compress(raw))
-    p+=ck('IEND',b'')
-    return p
-for nm,sz in [('mdpi',48),('hdpi',72),('xhdpi',96),('xxhdpi',144),('xxxhdpi',192)]:
-    open(f'app/src/main/res/mipmap-{nm}/ic_launcher.png','wb').write(png(sz))
-"
-
-      - name: Build APK
-        run: |
-          export ANDROID_HOME=/opt/android-sdk-linux
-          export PATH=$PATH:$ANDROID_HOME/platform-tools
+          python3 << 'PYEOF'
+          import os, stat
+ 
+          os.makedirs('app/src/main/java/com/haya/pos', exist_ok=True)
+          os.makedirs('app/src/main/res/values', exist_ok=True)
+          os.makedirs('app/src/main/res/mipmap-mdpi', exist_ok=True)
+          os.makedirs('app/src/main/res/mipmap-hdpi', exist_ok=True)
+          os.makedirs('app/src/main/res/mipmap-xhdpi', exist_ok=True)
+          os.makedirs('app/src/main/res/mipmap-xxhdpi', exist_ok=True)
+          os.makedirs('app/src/main/res/mipmap-xxxhdpi', exist_ok=True)
+          os.makedirs('gradle/wrapper', exist_ok=True)
+ 
+          files = {}
+ 
+          files['settings.gradle'] = 'rootProject.name = "HayaPOS"\ninclude ":app"\n'
+ 
+          files['build.gradle'] = '''buildscript {
+              repositories { google(); mavenCentral() }
+              dependencies { classpath 'com.android.tools.build:gradle:7.4.2' }
+          }
+          allprojects { repositories { google(); mavenCentral() } }
+          '''
+ 
+          files['gradle.properties'] = 'android.useAndroidX=true\nandroid.enableJetifier=true\n'
+ 
+          files['gradle/wrapper/gradle-wrapper.properties'] = '''distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          distributionUrl=https\\://services.gradle.org/distributions/gradle-7.5-bin.zip
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          '''
+ 
+          files['gradlew'] = '#!/bin/sh\nexec gradle "$@"\n'
+ 
+          files['app/build.gradle'] = '''plugins { id 'com.android.application' }
+          android {
+              namespace 'com.haya.pos'
+              compileSdk 33
+              defaultConfig {
+                  applicationId "com.haya.pos"
+                  minSdk 26
+                  targetSdk 33
+                  versionCode 1
+                  versionName "1.0"
+              }
+              buildTypes { debug { minifyEnabled false } }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_11
+                  targetCompatibility JavaVersion.VERSION_11
+              }
+          }
+          dependencies {
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+              implementation 'androidx.webkit:webkit:1.9.0'
+          }
+          '''
+ 
+          files['app/src/main/AndroidManifest.xml'] = '''<?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.BLUETOOTH"/>
+              <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+              <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation"/>
+              <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+              <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+              <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+              <uses-permission android:name="android.permission.WAKE_LOCK"/>
+              <application
+                  android:allowBackup="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:label="هيا وبلقيس"
+                  android:supportsRtl="true"
+                  android:theme="@style/Theme.AppCompat.NoActionBar"
+                  android:hardwareAccelerated="true"
+                  android:usesCleartextTraffic="true">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:screenOrientation="landscape"
+                      android:windowSoftInputMode="adjustResize"
+                      android:configChanges="orientation|screenSize"
+                      android:launchMode="singleTop">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          '''
+ 
+          files['app/src/main/java/com/haya/pos/MainActivity.java'] = '''package com.haya.pos;
+          import android.annotation.SuppressLint;
+          import android.app.AlertDialog;
+          import android.os.Bundle;
+          import android.view.View;
+          import android.view.WindowManager;
+          import android.webkit.*;
+          import androidx.appcompat.app.AppCompatActivity;
+          public class MainActivity extends AppCompatActivity {
+              private WebView webView;
+              private static final String URL = "https://effulgent-blini-89745c.netlify.app/";
+              @SuppressLint("SetJavaScriptEnabled")
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                  getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                  webView = new WebView(this);
+                  setContentView(webView);
+                  hideSystemUI();
+                  WebSettings s = webView.getSettings();
+                  s.setJavaScriptEnabled(true);
+                  s.setDomStorageEnabled(true);
+                  s.setGeolocationEnabled(true);
+                  s.setMediaPlaybackRequiresUserGesture(false);
+                  s.setUseWideViewPort(true);
+                  s.setLoadWithOverviewMode(true);
+                  webView.setWebChromeClient(new WebChromeClient() {
+                      @Override public void onPermissionRequest(PermissionRequest r) { r.grant(r.getResources()); }
+                      @Override public void onGeolocationPermissionsShowPrompt(String o,GeolocationPermissions.Callback c) { c.invoke(o,true,false); }
+                  });
+                  webView.setWebViewClient(new WebViewClient() {
+                      @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r) { v.loadUrl(r.getUrl().toString()); return true; }
+                  });
+                  webView.loadUrl(URL);
+              }
+              private void hideSystemUI() {
+                  getWindow().getDecorView().setSystemUiVisibility(
+                      View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY|View.SYSTEM_UI_FLAG_FULLSCREEN|
+                      View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+              }
+              @Override public void onWindowFocusChanged(boolean h) { super.onWindowFocusChanged(h); if(h) hideSystemUI(); }
+              @Override public void onBackPressed() {
+                  if(webView.canGoBack()) { webView.goBack(); return; }
+                  new AlertDialog.Builder(this).setTitle("اغلاق").setMessage("اغلاق التطبيق؟")
+                      .setPositiveButton("نعم",(d,w)->super.onBackPressed()).setNegativeButton("لا",null).show();
+              }
+              @Override protected void onResume() { super.onResume(); webView.onResume(); }
+              @Override protected void onPause() { super.onPause(); webView.onPause(); }
+          }
+          '''
+ 
+          files['app/src/main/res/values/styles.xml'] = '''<?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+                  <item name="android:windowBackground">#1c2333</item>
+              </style>
+          </resources>
+          '''
+ 
+          for path, content in files.items():
+              with open(path, 'w', encoding='utf-8') as f:
+                  f.write(content)
+ 
+          os.chmod('gradlew', os.stat('gradlew').st_mode | stat.S_IEXEC)
+ 
+          import struct, zlib, math
+          def make_png(s):
+              w=h=s; cx=cy=s//2; rows=[]
+              for y in range(h):
+                  row=[0]
+                  for x in range(w):
+                      d=math.sqrt((x-cx)**2+(y-cy)**2); r2=s*0.4
+                      if d<r2:
+                          t=d/r2; row+=[int(112*t),int(112-50*t),int(242-100*t),255]
+                      else:
+                          row+=[28,35,51,255]
+                  rows.append(bytes(row))
+              def ck(t,d):
+                  c=t.encode()+d
+                  return struct.pack('>I',len(d))+c+struct.pack('>I',zlib.crc32(c)&0xffffffff)
+              raw=b''.join(rows)
+              p=b'\x89PNG\r\n\x1a\n'
+              p+=ck('IHDR',struct.pack('>IIBBBBB',w,h,8,6,0,0,0))
+              p+=ck('IDAT',zlib.compress(raw))
+              p+=ck('IEND',b'')
+              return p
+ 
+          for nm,sz in [('mdpi',48),('hdpi',72),('xhdpi',96),('xxhdpi',144),('xxxhdpi',192)]:
+              with open(f'app/src/main/res/mipmap-{nm}/ic_launcher.png','wb') as f:
+                  f.write(make_png(sz))
+ 
+          print("All files created successfully!")
+          PYEOF
+ 
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
-
+ 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
