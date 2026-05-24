@@ -29,7 +29,7 @@ jobs:
           cat > build.gradle << 'EOF'
           buildscript {
               repositories { google(); mavenCentral() }
-              dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
+              dependencies { classpath 'com.android.tools.build:gradle:7.4.2' }
           }
           allprojects { repositories { google(); mavenCentral() } }
           EOF
@@ -43,11 +43,11 @@ jobs:
           plugins { id 'com.android.application' }
           android {
               namespace 'com.haya.pos'
-              compileSdk 34
+              compileSdk 33
               defaultConfig {
                   applicationId "com.haya.pos"
                   minSdk 26
-                  targetSdk 34
+                  targetSdk 33
                   versionCode 1
                   versionName "1.0"
               }
@@ -191,14 +191,14 @@ jobs:
           cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
+          distributionUrl=https\://services.gradle.org/distributions/gradle-7.5-bin.zip
           zipStoreBase=GRADLE_USER_HOME
           zipStorePath=wrapper/dists
           EOF
 
-          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O /tmp/gradle.zip
+          wget -q https://services.gradle.org/distributions/gradle-7.5-bin.zip -O /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /opt/gradle
-          export PATH=$PATH:/opt/gradle/gradle-8.2/bin
+          export PATH=$PATH:/opt/gradle/gradle-7.5/bin
           gradle wrapper
 
       - name: Set up JDK 17
