@@ -25,11 +25,15 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Gradle 7.5
+      - name: Install SDK 34 + Build Tools
         run: |
-          wget -q https://services.gradle.org/distributions/gradle-7.5-bin.zip -O /tmp/gradle.zip
+          yes | sdkmanager "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Setup Gradle 8.0
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.0-bin.zip -O /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /opt/
-          echo "/opt/gradle-7.5/bin" >> $GITHUB_PATH
+          echo "/opt/gradle-8.0/bin" >> $GITHUB_PATH
 
       - name: Create Android Project
         run: |
@@ -52,7 +56,7 @@ jobs:
               }
 
               dependencies {
-                  classpath 'com.android.tools.build:gradle:7.4.2'
+                  classpath 'com.android.tools.build:gradle:8.1.4'
               }
           }
 
@@ -73,7 +77,7 @@ jobs:
           cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-7.5-bin.zip
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-bin.zip
           zipStoreBase=GRADLE_USER_HOME
           zipStorePath=wrapper/dists
           EOF
@@ -87,39 +91,36 @@ jobs:
 
               namespace 'com.haya.pos'
 
-              compileSdk 33
+              compileSdk 34
 
               defaultConfig {
 
                   applicationId "com.haya.pos"
 
                   minSdk 26
-                  targetSdk 33
+                  targetSdk 34
 
                   versionCode 1
                   versionName "1.0"
               }
 
               buildTypes {
-
                   debug {
                       minifyEnabled false
                   }
               }
 
               compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_11
-                  targetCompatibility JavaVersion.VERSION_11
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
               }
           }
 
           dependencies {
 
               implementation 'androidx.appcompat:appcompat:1.7.0'
-
               implementation 'androidx.webkit:webkit:1.11.0'
-
-              implementation 'androidx.core:core:1.13.1'
+              implementation 'androidx.core:core-ktx:1.13.1'
 
               implementation 'com.github.DantSu:ESCPOS-ThermalPrinter-Android:3.3.0'
           }
@@ -129,13 +130,9 @@ jobs:
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
               <uses-permission android:name="android.permission.INTERNET"/>
-
               <uses-permission android:name="android.permission.BLUETOOTH"/>
-
               <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
-
               <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
-
               <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
 
               <application
@@ -148,13 +145,8 @@ jobs:
                       android:exported="true">
 
                       <intent-filter>
-
-                          <action android:name=
-                              "android.intent.action.MAIN"/>
-
-                          <category android:name=
-                              "android.intent.category.LAUNCHER"/>
-
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
                       </intent-filter>
 
                   </activity>
@@ -169,15 +161,11 @@ jobs:
 
           import android.Manifest;
           import android.annotation.SuppressLint;
-          import android.bluetooth.BluetoothAdapter;
           import android.content.pm.PackageManager;
           import android.os.Build;
           import android.os.Bundle;
           import android.webkit.JavascriptInterface;
-          import android.webkit.WebChromeClient;
-          import android.webkit.WebSettings;
           import android.webkit.WebView;
-          import android.webkit.WebViewClient;
           import android.widget.Toast;
 
           import androidx.appcompat.app.AppCompatActivity;
@@ -191,49 +179,29 @@ jobs:
           public class MainActivity extends AppCompatActivity {
 
               private WebView webView;
-
               private static final int REQ = 100;
 
               @SuppressLint({"SetJavaScriptEnabled","JavascriptInterface"})
               @Override
               protected void onCreate(Bundle savedInstanceState) {
-
                   super.onCreate(savedInstanceState);
 
-                  askPermissions();
-
                   webView = new WebView(this);
-
                   setContentView(webView);
 
-                  WebSettings s = webView.getSettings();
-
-                  s.setJavaScriptEnabled(true);
-
-                  s.setDomStorageEnabled(true);
-
-                  webView.setWebChromeClient(
-                      new WebChromeClient()
-                  );
-
-                  webView.setWebViewClient(
-                      new WebViewClient()
-                  );
+                  webView.getSettings().setJavaScriptEnabled(true);
+                  webView.loadUrl("https://YOUR-WEBSITE.com");
 
                   webView.addJavascriptInterface(
                       new PrinterBridge(),
                       "AndroidPrinter"
                   );
 
-                  webView.loadUrl(
-                      "https://YOUR-WEBSITE.com"
-                  );
+                  askPermissions();
               }
 
               private void askPermissions() {
-
                   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-
                       ActivityCompat.requestPermissions(
                           this,
                           new String[]{
@@ -249,27 +217,12 @@ jobs:
 
                   @JavascriptInterface
                   public void printReceipt(String text) {
-
                       try {
 
-                          if (Build.VERSION.SDK_INT >=
-                              Build.VERSION_CODES.S) {
-
-                              if (ContextCompat.checkSelfPermission(
-                                  MainActivity.this,
-                                  Manifest.permission.BLUETOOTH_CONNECT
-                              ) != PackageManager.PERMISSION_GRANTED) {
-
-                                  return;
-                              }
-                          }
-
                           BluetoothConnection printer =
-                              BluetoothPrintersConnections
-                                  .selectFirstPaired();
+                              BluetoothPrintersConnections.selectFirstPaired();
 
                           if (printer == null) {
-
                               runOnUiThread(() ->
                                   Toast.makeText(
                                       MainActivity.this,
@@ -277,27 +230,18 @@ jobs:
                                       Toast.LENGTH_LONG
                                   ).show()
                               );
-
                               return;
                           }
 
-                          EscPosPrinter p =
-                              new EscPosPrinter(
-                                  printer,
-                                  203,
-                                  48f,
-                                  32
-                              );
+                          EscPosPrinter p = new EscPosPrinter(printer, 203, 48f, 32);
 
                           p.printFormattedText(
                               "[C]<b>HAYA POS</b>\n" +
-                              "[L]\n" +
                               text +
-                              "\n[C]شكراً لزيارتكم\n\n"
+                              "\n[C]شكراً لكم\n"
                           );
 
                       } catch (Exception e) {
-
                           runOnUiThread(() ->
                               Toast.makeText(
                                   MainActivity.this,
