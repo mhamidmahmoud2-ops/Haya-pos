@@ -83,6 +83,14 @@ jobs:
           distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
           EOF
 
+          # ✅ مهم: إنشاء gradlew + حل Permission Denied
+          cat > gradlew << 'EOF'
+          #!/bin/sh
+          exec gradle "$@"
+          EOF
+
+          chmod +x gradlew
+
           cat > app/build.gradle << 'EOF'
           plugins {
               id 'com.android.application'
