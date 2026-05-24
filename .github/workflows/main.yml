@@ -1,38 +1,319 @@
 name: Build HayaPOS APK
- 
+
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+
   workflow_dispatch:
- 
+
 jobs:
   build:
     runs-on: ubuntu-latest
- 
+
     steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
- 
+          distribution: temurin
+          java-version: 17
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
- 
+
       - name: Install Gradle 7.5
         run: |
           wget -q https://services.gradle.org/distributions/gradle-7.5-bin.zip -O /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /opt/
           echo "/opt/gradle-7.5/bin" >> $GITHUB_PATH
- 
-      - name: Create Project Files
+
+      - name: Create Android Project
         run: |
-          echo "CmltcG9ydCBvcywgc3RhdCwgc3RydWN0LCB6bGliLCBtYXRoCgpvcy5tYWtlZGlycygiYXBwL3NyYy9tYWluL2phdmEvY29tL2hheWEvcG9zIiwgZXhpc3Rfb2s9VHJ1ZSkKb3MubWFrZWRpcnMoImFwcC9zcmMvbWFpbi9yZXMvdmFsdWVzIiwgZXhpc3Rfb2s9VHJ1ZSkKZm9yIGQgaW4gWyJtZHBpIiwiaGRwaSIsInhoZHBpIiwieHhoZHBpIiwieHh4aGRwaSJdOgogICAgb3MubWFrZWRpcnMoZiJhcHAvc3JjL21haW4vcmVzL21pcG1hcC17ZH0iLCBleGlzdF9vaz1UcnVlKQpvcy5tYWtlZGlycygiZ3JhZGxlL3dyYXBwZXIiLCBleGlzdF9vaz1UcnVlKQoKZGVmIHcocGF0aCwgY29udGVudCk6CiAgICB3aXRoIG9wZW4ocGF0aCwgInciLCBlbmNvZGluZz0idXRmLTgiKSBhcyBmOgogICAgICAgIGYud3JpdGUoY29udGVudCkKCncoInNldHRpbmdzLmdyYWRsZSIsICJyb290UHJvamVjdC5uYW1lID0gXCJIYXlhUE9TXCJcbmluY2x1ZGUgXCI6YXBwXCJcbiIpCgp3KCJidWlsZC5ncmFkbGUiLCAiIiJidWlsZHNjcmlwdCB7CiAgICByZXBvc2l0b3JpZXMgeyBnb29nbGUoKTsgbWF2ZW5DZW50cmFsKCkgfQogICAgZGVwZW5kZW5jaWVzIHsgY2xhc3NwYXRoICJjb20uYW5kcm9pZC50b29scy5idWlsZDpncmFkbGU6Ny40LjIiIH0KfQphbGxwcm9qZWN0cyB7IHJlcG9zaXRvcmllcyB7IGdvb2dsZSgpOyBtYXZlbkNlbnRyYWwoKSB9IH0KIiIiKQoKdygiZ3JhZGxlLnByb3BlcnRpZXMiLCAiYW5kcm9pZC51c2VBbmRyb2lkWD10cnVlXG5hbmRyb2lkLmVuYWJsZUpldGlmaWVyPXRydWVcbiIpCgp3KCJncmFkbGUvd3JhcHBlci9ncmFkbGUtd3JhcHBlci5wcm9wZXJ0aWVzIiwgIiIiZGlzdHJpYnV0aW9uQmFzZT1HUkFETEVfVVNFUl9IT01FCmRpc3RyaWJ1dGlvblBhdGg9d3JhcHBlci9kaXN0cwpkaXN0cmlidXRpb25Vcmw9aHR0cHNcXDovL3NlcnZpY2VzLmdyYWRsZS5vcmcvZGlzdHJpYnV0aW9ucy9ncmFkbGUtNy41LWJpbi56aXAKemlwU3RvcmVCYXNlPUdSQURMRV9VU0VSX0hPTUUKemlwU3RvcmVQYXRoPXdyYXBwZXIvZGlzdHMKIiIiKQoKdygiYXBwL2J1aWxkLmdyYWRsZSIsICIiInBsdWdpbnMgeyBpZCAiY29tLmFuZHJvaWQuYXBwbGljYXRpb24iIH0KYW5kcm9pZCB7CiAgICBuYW1lc3BhY2UgImNvbS5oYXlhLnBvcyIKICAgIGNvbXBpbGVTZGsgMzMKICAgIGRlZmF1bHRDb25maWcgewogICAgICAgIGFwcGxpY2F0aW9uSWQgImNvbS5oYXlhLnBvcyIKICAgICAgICBtaW5TZGsgMjYKICAgICAgICB0YXJnZXRTZGsgMzMKICAgICAgICB2ZXJzaW9uQ29kZSAxCiAgICAgICAgdmVyc2lvbk5hbWUgIjEuMCIKICAgIH0KICAgIGJ1aWxkVHlwZXMgeyBkZWJ1ZyB7IG1pbmlmeUVuYWJsZWQgZmFsc2UgfSB9CiAgICBjb21waWxlT3B0aW9ucyB7CiAgICAgICAgc291cmNlQ29tcGF0aWJpbGl0eSBKYXZhVmVyc2lvbi5WRVJTSU9OXzExCiAgICAgICAgdGFyZ2V0Q29tcGF0aWJpbGl0eSBKYXZhVmVyc2lvbi5WRVJTSU9OXzExCiAgICB9Cn0KZGVwZW5kZW5jaWVzIHsKICAgIGltcGxlbWVudGF0aW9uICJhbmRyb2lkeC5hcHBjb21wYXQ6YXBwY29tcGF0OjEuNi4xIgogICAgaW1wbGVtZW50YXRpb24gImFuZHJvaWR4LndlYmtpdDp3ZWJraXQ6MS45LjAiCn0KIiIiKQoKdygiYXBwL3NyYy9tYWluL0FuZHJvaWRNYW5pZmVzdC54bWwiLCAiIiI8P3htbCB2ZXJzaW9uPSIxLjAiIGVuY29kaW5nPSJ1dGYtOCI/Pgo8bWFuaWZlc3QgeG1sbnM6YW5kcm9pZD0iaHR0cDovL3NjaGVtYXMuYW5kcm9pZC5jb20vYXBrL3Jlcy9hbmRyb2lkIj4KICAgIDx1c2VzLXBlcm1pc3Npb24gYW5kcm9pZDpuYW1lPSJhbmRyb2lkLnBlcm1pc3Npb24uSU5URVJORVQiLz4KICAgIDx1c2VzLXBlcm1pc3Npb24gYW5kcm9pZDpuYW1lPSJhbmRyb2lkLnBlcm1pc3Npb24uQkxVRVRPT1RIIi8+CiAgICA8dXNlcy1wZXJtaXNzaW9uIGFuZHJvaWQ6bmFtZT0iYW5kcm9pZC5wZXJtaXNzaW9uLkJMVUVUT09USF9BRE1JTiIvPgogICAgPHVzZXMtcGVybWlzc2lvbiBhbmRyb2lkOm5hbWU9ImFuZHJvaWQucGVybWlzc2lvbi5CTFVFVE9PVEhfU0NBTiIgYW5kcm9pZDp1c2VzUGVybWlzc2lvbkZsYWdzPSJuZXZlckZvckxvY2F0aW9uIi8+CiAgICA8dXNlcy1wZXJtaXNzaW9uIGFuZHJvaWQ6bmFtZT0iYW5kcm9pZC5wZXJtaXNzaW9uLkJMVUVUT09USF9DT05ORUNUIi8+CiAgICA8dXNlcy1wZXJtaXNzaW9uIGFuZHJvaWQ6bmFtZT0iYW5kcm9pZC5wZXJtaXNzaW9uLkFDQ0VTU19GSU5FX0xPQ0FUSU9OIi8+CiAgICA8dXNlcy1wZXJtaXNzaW9uIGFuZHJvaWQ6bmFtZT0iYW5kcm9pZC5wZXJtaXNzaW9uLkFDQ0VTU19DT0FSU0VfTE9DQVRJT04iLz4KICAgIDx1c2VzLXBlcm1pc3Npb24gYW5kcm9pZDpuYW1lPSJhbmRyb2lkLnBlcm1pc3Npb24uV0FLRV9MT0NLIi8+CiAgICA8YXBwbGljYXRpb24KICAgICAgICBhbmRyb2lkOmFsbG93QmFja3VwPSJ0cnVlIgogICAgICAgIGFuZHJvaWQ6aWNvbj0iQG1pcG1hcC9pY19sYXVuY2hlciIKICAgICAgICBhbmRyb2lkOmxhYmVsPSLZh9mK2Kcg2YjYqNmE2YLZitizIgogICAgICAgIGFuZHJvaWQ6c3VwcG9ydHNSdGw9InRydWUiCiAgICAgICAgYW5kcm9pZDp0aGVtZT0iQHN0eWxlL1RoZW1lLkFwcENvbXBhdC5Ob0FjdGlvbkJhciIKICAgICAgICBhbmRyb2lkOmhhcmR3YXJlQWNjZWxlcmF0ZWQ9InRydWUiCiAgICAgICAgYW5kcm9pZDp1c2VzQ2xlYXJ0ZXh0VHJhZmZpYz0idHJ1ZSI+CiAgICAgICAgPGFjdGl2aXR5CiAgICAgICAgICAgIGFuZHJvaWQ6bmFtZT0iLk1haW5BY3Rpdml0eSIKICAgICAgICAgICAgYW5kcm9pZDpleHBvcnRlZD0idHJ1ZSIKICAgICAgICAgICAgYW5kcm9pZDpzY3JlZW5PcmllbnRhdGlvbj0ibGFuZHNjYXBlIgogICAgICAgICAgICBhbmRyb2lkOndpbmRvd1NvZnRJbnB1dE1vZGU9ImFkanVzdFJlc2l6ZSIKICAgICAgICAgICAgYW5kcm9pZDpjb25maWdDaGFuZ2VzPSJvcmllbnRhdGlvbnxzY3JlZW5TaXplIgogICAgICAgICAgICBhbmRyb2lkOmxhdW5jaE1vZGU9InNpbmdsZVRvcCI+CiAgICAgICAgICAgIDxpbnRlbnQtZmlsdGVyPgogICAgICAgICAgICAgICAgPGFjdGlvbiBhbmRyb2lkOm5hbWU9ImFuZHJvaWQuaW50ZW50LmFjdGlvbi5NQUlOIi8+CiAgICAgICAgICAgICAgICA8Y2F0ZWdvcnkgYW5kcm9pZDpuYW1lPSJhbmRyb2lkLmludGVudC5jYXRlZ29yeS5MQVVOQ0hFUiIvPgogICAgICAgICAgICA8L2ludGVudC1maWx0ZXI+CiAgICAgICAgPC9hY3Rpdml0eT4KICAgIDwvYXBwbGljYXRpb24+CjwvbWFuaWZlc3Q+CiIiIikKCncoImFwcC9zcmMvbWFpbi9qYXZhL2NvbS9oYXlhL3Bvcy9NYWluQWN0aXZpdHkuamF2YSIsICIiInBhY2thZ2UgY29tLmhheWEucG9zOwppbXBvcnQgYW5kcm9pZC5hbm5vdGF0aW9uLlN1cHByZXNzTGludDsKaW1wb3J0IGFuZHJvaWQuYXBwLkFsZXJ0RGlhbG9nOwppbXBvcnQgYW5kcm9pZC5vcy5CdW5kbGU7CmltcG9ydCBhbmRyb2lkLnZpZXcuVmlldzsKaW1wb3J0IGFuZHJvaWQudmlldy5XaW5kb3dNYW5hZ2VyOwppbXBvcnQgYW5kcm9pZC53ZWJraXQuKjsKaW1wb3J0IGFuZHJvaWR4LmFwcGNvbXBhdC5hcHAuQXBwQ29tcGF0QWN0aXZpdHk7CnB1YmxpYyBjbGFzcyBNYWluQWN0aXZpdHkgZXh0ZW5kcyBBcHBDb21wYXRBY3Rpdml0eSB7CiAgICBwcml2YXRlIFdlYlZpZXcgd2ViVmlldzsKICAgIHByaXZhdGUgc3RhdGljIGZpbmFsIFN0cmluZyBUQVJHRVQgPSAiaHR0cHM6Ly9lZmZ1bGdlbnQtYmxpbmktODk3NDVjLm5ldGxpZnkuYXBwLyI7CiAgICBAU3VwcHJlc3NMaW50KCJTZXRKYXZhU2NyaXB0RW5hYmxlZCIpCiAgICBAT3ZlcnJpZGUKICAgIHByb3RlY3RlZCB2b2lkIG9uQ3JlYXRlKEJ1bmRsZSBzYXZlZEluc3RhbmNlU3RhdGUpIHsKICAgICAgICBzdXBlci5vbkNyZWF0ZShzYXZlZEluc3RhbmNlU3RhdGUpOwogICAgICAgIGdldFdpbmRvdygpLmFkZEZsYWdzKFdpbmRvd01hbmFnZXIuTGF5b3V0UGFyYW1zLkZMQUdfS0VFUF9TQ1JFRU5fT04pOwogICAgICAgIGdldFdpbmRvdygpLnNldEZsYWdzKFdpbmRvd01hbmFnZXIuTGF5b3V0UGFyYW1zLkZMQUdfRlVMTFNDUkVFTixXaW5kb3dNYW5hZ2VyLkxheW91dFBhcmFtcy5GTEFHX0ZVTExTQ1JFRU4pOwogICAgICAgIHdlYlZpZXcgPSBuZXcgV2ViVmlldyh0aGlzKTsKICAgICAgICBzZXRDb250ZW50Vmlldyh3ZWJWaWV3KTsKICAgICAgICBoaWRlU3lzdGVtVUkoKTsKICAgICAgICBXZWJTZXR0aW5ncyBzID0gd2ViVmlldy5nZXRTZXR0aW5ncygpOwogICAgICAgIHMuc2V0SmF2YVNjcmlwdEVuYWJsZWQodHJ1ZSk7CiAgICAgICAgcy5zZXREb21TdG9yYWdlRW5hYmxlZCh0cnVlKTsKICAgICAgICBzLnNldEdlb2xvY2F0aW9uRW5hYmxlZCh0cnVlKTsKICAgICAgICBzLnNldE1lZGlhUGxheWJhY2tSZXF1aXJlc1VzZXJHZXN0dXJlKGZhbHNlKTsKICAgICAgICBzLnNldFVzZVdpZGVWaWV3UG9ydCh0cnVlKTsKICAgICAgICBzLnNldExvYWRXaXRoT3ZlcnZpZXdNb2RlKHRydWUpOwogICAgICAgIHdlYlZpZXcuc2V0V2ViQ2hyb21lQ2xpZW50KG5ldyBXZWJDaHJvbWVDbGllbnQoKSB7CiAgICAgICAgICAgIEBPdmVycmlkZSBwdWJsaWMgdm9pZCBvblBlcm1pc3Npb25SZXF1ZXN0KFBlcm1pc3Npb25SZXF1ZXN0IHIpIHsgci5ncmFudChyLmdldFJlc291cmNlcygpKTsgfQogICAgICAgICAgICBAT3ZlcnJpZGUgcHVibGljIHZvaWQgb25HZW9sb2NhdGlvblBlcm1pc3Npb25zU2hvd1Byb21wdChTdHJpbmcgbyxHZW9sb2NhdGlvblBlcm1pc3Npb25zLkNhbGxiYWNrIGMpIHsgYy5pbnZva2Uobyx0cnVlLGZhbHNlKTsgfQogICAgICAgIH0pOwogICAgICAgIHdlYlZpZXcuc2V0V2ViVmlld0NsaWVudChuZXcgV2ViVmlld0NsaWVudCgpIHsKICAgICAgICAgICAgQE92ZXJyaWRlIHB1YmxpYyBib29sZWFuIHNob3VsZE92ZXJyaWRlVXJsTG9hZGluZyhXZWJWaWV3IHYsV2ViUmVzb3VyY2VSZXF1ZXN0IHIpIHsgdi5sb2FkVXJsKHIuZ2V0VXJsKCkudG9TdHJpbmcoKSk7IHJldHVybiB0cnVlOyB9CiAgICAgICAgfSk7CiAgICAgICAgd2ViVmlldy5sb2FkVXJsKFRBUkdFVCk7CiAgICB9CiAgICBwcml2YXRlIHZvaWQgaGlkZVN5c3RlbVVJKCkgewogICAgICAgIGdldFdpbmRvdygpLmdldERlY29yVmlldygpLnNldFN5c3RlbVVpVmlzaWJpbGl0eSgKICAgICAgICAgICAgVmlldy5TWVNURU1fVUlfRkxBR19JTU1FUlNJVkVfU1RJQ0tZfFZpZXcuU1lTVEVNX1VJX0ZMQUdfRlVMTFNDUkVFTnwKICAgICAgICAgICAgVmlldy5TWVNURU1fVUlfRkxBR19ISURFX05BVklHQVRJT058Vmlldy5TWVNURU1fVUlfRkxBR19MQVlPVVRfU1RBQkxFKTsKICAgIH0KICAgIEBPdmVycmlkZSBwdWJsaWMgdm9pZCBvbldpbmRvd0ZvY3VzQ2hhbmdlZChib29sZWFuIGgpIHsgc3VwZXIub25XaW5kb3dGb2N1c0NoYW5nZWQoaCk7IGlmKGgpIGhpZGVTeXN0ZW1VSSgpOyB9CiAgICBAT3ZlcnJpZGUgcHVibGljIHZvaWQgb25CYWNrUHJlc3NlZCgpIHsKICAgICAgICBpZih3ZWJWaWV3LmNhbkdvQmFjaygpKSB7IHdlYlZpZXcuZ29CYWNrKCk7IHJldHVybjsgfQogICAgICAgIG5ldyBBbGVydERpYWxvZy5CdWlsZGVyKHRoaXMpLnNldFRpdGxlKCLYp9i62YTYp9mCIikuc2V0TWVzc2FnZSgi2KfYutmE2KfZgiDYp9mE2KrYt9io2YrZgtifIikKICAgICAgICAgICAgLnNldFBvc2l0aXZlQnV0dG9uKCLZhti52YUiLChkLHd3KS0+c3VwZXIub25CYWNrUHJlc3NlZCgpKS5zZXROZWdhdGl2ZUJ1dHRvbigi2YTYpyIsbnVsbCkuc2hvdygpOwogICAgfQogICAgQE92ZXJyaWRlIHByb3RlY3RlZCB2b2lkIG9uUmVzdW1lKCkgeyBzdXBlci5vblJlc3VtZSgpOyB3ZWJWaWV3Lm9uUmVzdW1lKCk7IH0KICAgIEBPdmVycmlkZSBwcm90ZWN0ZWQgdm9pZCBvblBhdXNlKCkgeyBzdXBlci5vblBhdXNlKCk7IHdlYlZpZXcub25QYXVzZSgpOyB9Cn0KIiIiKQoKdygiYXBwL3NyYy9tYWluL3Jlcy92YWx1ZXMvc3R5bGVzLnhtbCIsICIiIjw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9InV0Zi04Ij8+CjxyZXNvdXJjZXM+CiAgICA8c3R5bGUgbmFtZT0iQXBwVGhlbWUiIHBhcmVudD0iVGhlbWUuQXBwQ29tcGF0Lk5vQWN0aW9uQmFyIj4KICAgICAgICA8aXRlbSBuYW1lPSJhbmRyb2lkOndpbmRvd0JhY2tncm91bmQiPiMxYzIzMzM8L2l0ZW0+CiAgICA8L3N0eWxlPgo8L3Jlc291cmNlcz4KIiIiKQoKZGVmIG1ha2VfcG5nKHMpOgogICAgdz1oPXM7IGN4PWN5PXMvLzI7IHJvd3M9W10KICAgIGZvciB5IGluIHJhbmdlKGgpOgogICAgICAgIHJvdz1bMF0KICAgICAgICBmb3IgeCBpbiByYW5nZSh3KToKICAgICAgICAgICAgZD1tYXRoLnNxcnQoKHgtY3gpKioyKyh5LWN5KSoqMik7IHIyPXMqMC40CiAgICAgICAgICAgIGlmIGQ8cjI6CiAgICAgICAgICAgICAgICB0PWQvcjI7IHJvdys9W2ludCgxMTIqdCksaW50KDExMi01MCp0KSxpbnQoMjQyLTEwMCp0KSwyNTVdCiAgICAgICAgICAgIGVsc2U6CiAgICAgICAgICAgICAgICByb3crPVsyOCwzNSw1MSwyNTVdCiAgICAgICAgcm93cy5hcHBlbmQoYnl0ZXMocm93KSkKICAgIGRlZiBjayh0LGQpOgogICAgICAgIGM9dC5lbmNvZGUoKStkCiAgICAgICAgcmV0dXJuIHN0cnVjdC5wYWNrKCI+SSIsbGVuKGQpKStjK3N0cnVjdC5wYWNrKCI+SSIsemxpYi5jcmMzMihjKSYweGZmZmZmZmZmKQogICAgcmF3PWIiIi5qb2luKHJvd3MpCiAgICBwPWIiXHg4OVBOR1xyXG5ceDFhXG4iCiAgICBwKz1jaygiSUhEUiIsc3RydWN0LnBhY2soIj5JSUJCQkJCIix3LGgsOCw2LDAsMCwwKSkKICAgIHArPWNrKCJJREFUIix6bGliLmNvbXByZXNzKHJhdykpCiAgICBwKz1jaygiSUVORCIsYiIiKQogICAgcmV0dXJuIHAKCmZvciBubSxzeiBpbiBbKCJtZHBpIiw0OCksKCJoZHBpIiw3MiksKCJ4aGRwaSIsOTYpLCgieHhoZHBpIiwxNDQpLCgieHh4aGRwaSIsMTkyKV06CiAgICB3aXRoIG9wZW4oZiJhcHAvc3JjL21haW4vcmVzL21pcG1hcC17bm19L2ljX2xhdW5jaGVyLnBuZyIsIndiIikgYXMgZjoKICAgICAgICBmLndyaXRlKG1ha2VfcG5nKHN6KSkKCnByaW50KCJBbGwgZmlsZXMgY3JlYXRlZCEiKQo=" | base64 -d > /tmp/setup.py
-          python3 /tmp/setup.py
- 
+
+          mkdir -p app/src/main/java/com/haya/pos
+          mkdir -p app/src/main/res/values
+          mkdir -p gradle/wrapper
+
+          cat > settings.gradle << 'EOF'
+          rootProject.name = "HayaPOS"
+          include ':app'
+          EOF
+
+          cat > build.gradle << 'EOF'
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+                  maven { url 'https://jitpack.io' }
+              }
+
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:7.4.2'
+              }
+          }
+
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+                  maven { url 'https://jitpack.io' }
+              }
+          }
+          EOF
+
+          cat > gradle.properties << 'EOF'
+          android.useAndroidX=true
+          android.enableJetifier=true
+          EOF
+
+          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-7.5-bin.zip
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          EOF
+
+          cat > app/build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+
+          android {
+
+              namespace 'com.haya.pos'
+
+              compileSdk 33
+
+              defaultConfig {
+
+                  applicationId "com.haya.pos"
+
+                  minSdk 26
+                  targetSdk 33
+
+                  versionCode 1
+                  versionName "1.0"
+              }
+
+              buildTypes {
+
+                  debug {
+                      minifyEnabled false
+                  }
+              }
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_11
+                  targetCompatibility JavaVersion.VERSION_11
+              }
+          }
+
+          dependencies {
+
+              implementation 'androidx.appcompat:appcompat:1.7.0'
+
+              implementation 'androidx.webkit:webkit:1.11.0'
+
+              implementation 'androidx.core:core:1.13.1'
+
+              implementation 'com.github.DantSu:ESCPOS-ThermalPrinter-Android:3.3.0'
+          }
+          EOF
+
+          cat > app/src/main/AndroidManifest.xml << 'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+              <uses-permission android:name="android.permission.INTERNET"/>
+
+              <uses-permission android:name="android.permission.BLUETOOTH"/>
+
+              <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+
+              <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+
+              <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
+
+              <application
+                  android:allowBackup="true"
+                  android:label="Haya POS"
+                  android:theme="@style/Theme.AppCompat.NoActionBar">
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+
+                      <intent-filter>
+
+                          <action android:name=
+                              "android.intent.action.MAIN"/>
+
+                          <category android:name=
+                              "android.intent.category.LAUNCHER"/>
+
+                      </intent-filter>
+
+                  </activity>
+
+              </application>
+
+          </manifest>
+          EOF
+
+          cat > app/src/main/java/com/haya/pos/MainActivity.java << 'EOF'
+          package com.haya.pos;
+
+          import android.Manifest;
+          import android.annotation.SuppressLint;
+          import android.bluetooth.BluetoothAdapter;
+          import android.content.pm.PackageManager;
+          import android.os.Build;
+          import android.os.Bundle;
+          import android.webkit.JavascriptInterface;
+          import android.webkit.WebChromeClient;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import android.widget.Toast;
+
+          import androidx.appcompat.app.AppCompatActivity;
+          import androidx.core.app.ActivityCompat;
+          import androidx.core.content.ContextCompat;
+
+          import com.dantsu.escposprinter.EscPosPrinter;
+          import com.dantsu.escposprinter.connection.bluetooth.BluetoothConnection;
+          import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnections;
+
+          public class MainActivity extends AppCompatActivity {
+
+              private WebView webView;
+
+              private static final int REQ = 100;
+
+              @SuppressLint({"SetJavaScriptEnabled","JavascriptInterface"})
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+
+                  super.onCreate(savedInstanceState);
+
+                  askPermissions();
+
+                  webView = new WebView(this);
+
+                  setContentView(webView);
+
+                  WebSettings s = webView.getSettings();
+
+                  s.setJavaScriptEnabled(true);
+
+                  s.setDomStorageEnabled(true);
+
+                  webView.setWebChromeClient(
+                      new WebChromeClient()
+                  );
+
+                  webView.setWebViewClient(
+                      new WebViewClient()
+                  );
+
+                  webView.addJavascriptInterface(
+                      new PrinterBridge(),
+                      "AndroidPrinter"
+                  );
+
+                  webView.loadUrl(
+                      "https://YOUR-WEBSITE.com"
+                  );
+              }
+
+              private void askPermissions() {
+
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+
+                      ActivityCompat.requestPermissions(
+                          this,
+                          new String[]{
+                              Manifest.permission.BLUETOOTH_CONNECT,
+                              Manifest.permission.BLUETOOTH_SCAN
+                          },
+                          REQ
+                      );
+                  }
+              }
+
+              public class PrinterBridge {
+
+                  @JavascriptInterface
+                  public void printReceipt(String text) {
+
+                      try {
+
+                          if (Build.VERSION.SDK_INT >=
+                              Build.VERSION_CODES.S) {
+
+                              if (ContextCompat.checkSelfPermission(
+                                  MainActivity.this,
+                                  Manifest.permission.BLUETOOTH_CONNECT
+                              ) != PackageManager.PERMISSION_GRANTED) {
+
+                                  return;
+                              }
+                          }
+
+                          BluetoothConnection printer =
+                              BluetoothPrintersConnections
+                                  .selectFirstPaired();
+
+                          if (printer == null) {
+
+                              runOnUiThread(() ->
+                                  Toast.makeText(
+                                      MainActivity.this,
+                                      "لا يوجد طابعة مقترنة",
+                                      Toast.LENGTH_LONG
+                                  ).show()
+                              );
+
+                              return;
+                          }
+
+                          EscPosPrinter p =
+                              new EscPosPrinter(
+                                  printer,
+                                  203,
+                                  48f,
+                                  32
+                              );
+
+                          p.printFormattedText(
+                              "[C]<b>HAYA POS</b>\n" +
+                              "[L]\n" +
+                              text +
+                              "\n[C]شكراً لزيارتكم\n\n"
+                          );
+
+                      } catch (Exception e) {
+
+                          runOnUiThread(() ->
+                              Toast.makeText(
+                                  MainActivity.this,
+                                  e.getMessage(),
+                                  Toast.LENGTH_LONG
+                              ).show()
+                          );
+                      }
+                  }
+              }
+          }
+          EOF
+
       - name: Build APK
-        run: gradle assembleDebug --no-daemon --project-dir .
- 
+        run: gradle assembleDebug --no-daemon
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
