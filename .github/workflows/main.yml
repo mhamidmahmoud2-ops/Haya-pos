@@ -29,7 +29,7 @@ jobs:
         run: |
           yes | sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Setup Gradle 8.2
+      - name: Setup Gradle
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /opt/
@@ -39,7 +39,6 @@ jobs:
         run: |
 
           mkdir -p app/src/main/java/com/haya/pos
-          mkdir -p gradle/wrapper
 
           cat > settings.gradle << 'EOF'
           rootProject.name = "HayaPOS"
@@ -73,10 +72,6 @@ jobs:
           android.enableJetifier=true
           EOF
 
-          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
-          EOF
-
           cat > app/build.gradle << 'EOF'
           plugins {
               id 'com.android.application'
@@ -106,7 +101,6 @@ jobs:
               implementation 'androidx.webkit:webkit:1.11.0'
               implementation 'androidx.core:core-ktx:1.13.1'
 
-              // ✅ FIXED VERSION (JitPack stable)
               implementation 'com.github.DantSu:ESCPOS-ThermalPrinter-Android:3.3.2'
           }
           EOF
@@ -162,7 +156,7 @@ jobs:
           EOF
 
       - name: Build APK
-        run: ./gradlew assembleDebug --no-daemon
+        run: gradle assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
