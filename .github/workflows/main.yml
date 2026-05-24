@@ -25,7 +25,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install SDK 34 + Build Tools
+      - name: Install SDK 34
         run: |
           yes | sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
@@ -40,11 +40,13 @@ jobs:
 
           mkdir -p app/src/main/java/com/haya/pos
 
+          # settings
           cat > settings.gradle << 'EOF'
           rootProject.name = "HayaPOS"
           include ':app'
           EOF
 
+          # project build.gradle
           cat > build.gradle << 'EOF'
           buildscript {
               repositories {
@@ -55,6 +57,7 @@ jobs:
 
               dependencies {
                   classpath 'com.android.tools.build:gradle:8.1.4'
+                  classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22"
               }
           }
 
@@ -67,11 +70,15 @@ jobs:
           }
           EOF
 
+          # gradle properties
           cat > gradle.properties << 'EOF'
           android.useAndroidX=true
           android.enableJetifier=true
+          kotlin.code.style=official
+          kotlin.version=1.9.22
           EOF
 
+          # app build.gradle
           cat > app/build.gradle << 'EOF'
           plugins {
               id 'com.android.application'
@@ -101,11 +108,19 @@ jobs:
               implementation 'androidx.webkit:webkit:1.11.0'
               implementation 'androidx.core:core-ktx:1.13.1'
 
-              // ✅ STABLE WORKING VERSION
+              // stable printer library
               implementation 'com.github.DantSu:ESCPOS-ThermalPrinter-Android:3.3.0'
+
+              // FORCE SINGLE KOTLIN VERSION (fix duplicates)
+              constraints {
+                  implementation('org.jetbrains.kotlin:kotlin-stdlib:1.9.22') {
+                      because 'force single kotlin version'
+                  }
+              }
           }
           EOF
 
+          # manifest
           cat > app/src/main/AndroidManifest.xml << 'EOF'
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
@@ -134,6 +149,7 @@ jobs:
           </manifest>
           EOF
 
+          # main activity
           cat > app/src/main/java/com/haya/pos/MainActivity.java << 'EOF'
           package com.haya.pos;
 
