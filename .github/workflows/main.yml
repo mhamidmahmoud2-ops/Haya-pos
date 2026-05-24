@@ -29,17 +29,16 @@ jobs:
         run: |
           yes | sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Setup Gradle 8.0
+      - name: Setup Gradle 8.2
         run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.0-bin.zip -O /tmp/gradle.zip
+          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /opt/
-          echo "/opt/gradle-8.0/bin" >> $GITHUB_PATH
+          echo "/opt/gradle-8.2/bin" >> $GITHUB_PATH
 
       - name: Create Android Project
         run: |
 
           mkdir -p app/src/main/java/com/haya/pos
-          mkdir -p app/src/main/res/values
           mkdir -p gradle/wrapper
 
           cat > settings.gradle << 'EOF'
@@ -52,7 +51,6 @@ jobs:
               repositories {
                   google()
                   mavenCentral()
-                  maven { url 'https://jitpack.io' }
               }
 
               dependencies {
@@ -64,7 +62,14 @@ jobs:
               repositories {
                   google()
                   mavenCentral()
-                  maven { url 'https://jitpack.io' }
+              }
+
+              configurations.all {
+                  resolutionStrategy {
+                      force "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.22"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.22"
+                  }
               }
           }
           EOF
@@ -75,11 +80,7 @@ jobs:
           EOF
 
           cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
-          distributionBase=GRADLE_USER_HOME
-          distributionPath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-bin.zip
-          zipStoreBase=GRADLE_USER_HOME
-          zipStorePath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
           EOF
 
           cat > app/build.gradle << 'EOF'
@@ -88,26 +89,15 @@ jobs:
           }
 
           android {
-
               namespace 'com.haya.pos'
-
               compileSdk 34
 
               defaultConfig {
-
                   applicationId "com.haya.pos"
-
                   minSdk 26
                   targetSdk 34
-
                   versionCode 1
                   versionName "1.0"
-              }
-
-              buildTypes {
-                  debug {
-                      minifyEnabled false
-                  }
               }
 
               compileOptions {
@@ -122,7 +112,9 @@ jobs:
               implementation 'androidx.webkit:webkit:1.11.0'
               implementation 'androidx.core:core-ktx:1.13.1'
 
-              implementation 'com.github.DantSu:ESCPOS-ThermalPrinter-Android:3.3.0'
+              implementation('com.github.DantSu:ESCPOS-ThermalPrinter-Android:3.3.0') {
+                  exclude group: 'org.jetbrains.kotlin'
+              }
           }
           EOF
 
@@ -131,12 +123,10 @@ jobs:
 
               <uses-permission android:name="android.permission.INTERNET"/>
               <uses-permission android:name="android.permission.BLUETOOTH"/>
-              <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
               <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
               <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
 
               <application
-                  android:allowBackup="true"
                   android:label="Haya POS"
                   android:theme="@style/Theme.AppCompat.NoActionBar">
 
@@ -159,104 +149,27 @@ jobs:
           cat > app/src/main/java/com/haya/pos/MainActivity.java << 'EOF'
           package com.haya.pos;
 
-          import android.Manifest;
-          import android.annotation.SuppressLint;
-          import android.content.pm.PackageManager;
-          import android.os.Build;
           import android.os.Bundle;
-          import android.webkit.JavascriptInterface;
           import android.webkit.WebView;
-          import android.widget.Toast;
-
           import androidx.appcompat.app.AppCompatActivity;
-          import androidx.core.app.ActivityCompat;
-          import androidx.core.content.ContextCompat;
-
-          import com.dantsu.escposprinter.EscPosPrinter;
-          import com.dantsu.escposprinter.connection.bluetooth.BluetoothConnection;
-          import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnections;
 
           public class MainActivity extends AppCompatActivity {
 
-              private WebView webView;
-              private static final int REQ = 100;
-
-              @SuppressLint({"SetJavaScriptEnabled","JavascriptInterface"})
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
 
-                  webView = new WebView(this);
+                  WebView webView = new WebView(this);
                   setContentView(webView);
 
                   webView.getSettings().setJavaScriptEnabled(true);
                   webView.loadUrl("https://YOUR-WEBSITE.com");
-
-                  webView.addJavascriptInterface(
-                      new PrinterBridge(),
-                      "AndroidPrinter"
-                  );
-
-                  askPermissions();
-              }
-
-              private void askPermissions() {
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                      ActivityCompat.requestPermissions(
-                          this,
-                          new String[]{
-                              Manifest.permission.BLUETOOTH_CONNECT,
-                              Manifest.permission.BLUETOOTH_SCAN
-                          },
-                          REQ
-                      );
-                  }
-              }
-
-              public class PrinterBridge {
-
-                  @JavascriptInterface
-                  public void printReceipt(String text) {
-                      try {
-
-                          BluetoothConnection printer =
-                              BluetoothPrintersConnections.selectFirstPaired();
-
-                          if (printer == null) {
-                              runOnUiThread(() ->
-                                  Toast.makeText(
-                                      MainActivity.this,
-                                      "لا يوجد طابعة مقترنة",
-                                      Toast.LENGTH_LONG
-                                  ).show()
-                              );
-                              return;
-                          }
-
-                          EscPosPrinter p = new EscPosPrinter(printer, 203, 48f, 32);
-
-                          p.printFormattedText(
-                              "[C]<b>HAYA POS</b>\n" +
-                              text +
-                              "\n[C]شكراً لكم\n"
-                          );
-
-                      } catch (Exception e) {
-                          runOnUiThread(() ->
-                              Toast.makeText(
-                                  MainActivity.this,
-                                  e.getMessage(),
-                                  Toast.LENGTH_LONG
-                              ).show()
-                          );
-                      }
-                  }
               }
           }
           EOF
 
       - name: Build APK
-        run: gradle assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
