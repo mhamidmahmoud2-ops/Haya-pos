@@ -29,7 +29,7 @@ jobs:
         run: |
           yes | sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Setup Gradle
+      - name: Setup Gradle 8.2
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /opt/
@@ -101,7 +101,8 @@ jobs:
               implementation 'androidx.webkit:webkit:1.11.0'
               implementation 'androidx.core:core-ktx:1.13.1'
 
-              implementation 'com.github.DantSu:ESCPOS-ThermalPrinter-Android:3.3.2'
+              // ✅ STABLE WORKING VERSION
+              implementation 'com.github.DantSu:ESCPOS-ThermalPrinter-Android:3.3.0'
           }
           EOF
 
